@@ -8,17 +8,24 @@ public interface TPCNode extends Remote {
      */
 
     // participants to coordinator
-    public String canCommit(int id, String op, String key, String value) throws RemoteException;
 
-    public void doCommit(int id) throws RemoteException;
+    public void canCommit(int id, String op, String key, String value) throws RemoteException;
 
-    public void doAbort(int id) throws RemoteException;
+    public void doCommit(int id,String op, String key, String value) throws RemoteException;
+
+    public void doAbort(int id, String op, String key, String value) throws RemoteException;
+
+    public String doGet(String key) throws RemoteException;
 
     // coordinator to participants
-    public String haveCommitted(int id, String participant) throws RemoteException;
+    // canCommeit: 0 - yes, 1 - no
+    public void vote(int id, String op, String key, String value, int canCommit) throws RemoteException;
+
+    // coordinator to participants
+    public String haveCommitted(int id,  String op, String key, String value, String participant) throws RemoteException;
 
     // to each other
-    public String getDecision(int id) throws RemoteException;
+    public String getDecision(int id, String op, String key, String value) throws RemoteException;
 
 
     /*
@@ -32,6 +39,11 @@ public interface TPCNode extends Remote {
     public int del(String key) throws RemoteException;
 
     public String get(String key) throws RemoteException;
+
+    // util functions
+    public void handShaking(String hosts) throws RemoteException;
+
+    public void doWrite(String op, String key, String value) throws RemoteException;
 
 }
 
