@@ -52,7 +52,7 @@ public class TPCServer implements TPCNode {
 
                     System.out.println();
 
-                    String response = null;
+                    String response = " ";
                     // set response
                     InetAddress address = packet.getAddress();
                     int port = packet.getPort();
@@ -60,10 +60,12 @@ public class TPCServer implements TPCNode {
 
                     String record = getRecordFromLog(requestedOpId, null);
                     if(record == null)  response= " ";
-                    else if( record.split(" ")[1].contentEquals("Global_Abort")) response = "Global_Abort";
+                    else if( record.split(" ")[1].contentEquals("Global_Abort")) response ="Global_Abort";
                     else if(record.split(" ")[1].contentEquals("Global_Commit")) response = "Global_Commit";
 
-                    packet = new DatagramPacket(response.getBytes(), response.length(), address, port);
+                    buf = new byte[256];
+                    buf = response.getBytes();
+                    packet = new DatagramPacket(buf, buf.length, address, port);
                     socket.send(packet);
                 }
             }catch (IOException e){
@@ -146,6 +148,7 @@ public class TPCServer implements TPCNode {
                 return false;
             }else {
                 this.ongoingOps.put(key, 0);
+                System.out.println("-> added " +key );
                 return true;
             }
         }
@@ -167,16 +170,18 @@ public class TPCServer implements TPCNode {
     public void delOp(String key){
         synchronized (this.ongoingOps){
             this.ongoingOps.remove(key);
+            System.out.println("-> removed " + key);
         }
     }
 
     public void writeLog(String toWrite){
         synchronized (this){
             try{
-                System.out.println("-> Writing to log: " + toWrite);
                 BufferedWriter bw = new BufferedWriter(new FileWriter(this.logFile, true));
                 bw.write(toWrite);
                 bw.close();
+                toWrite = toWrite.substring(0, toWrite.length()-1);
+                System.out.println("-> Wrote to log: " + toWrite);
             }catch (IOException e){
                 System.out.println("ERROR writing to log: put operation.s");
             }
@@ -190,6 +195,7 @@ public class TPCServer implements TPCNode {
             public void run() {
                 if(opOngoing(key)){
                     // multicast decision
+                    System.out.println("-> timeout waiting for vote, op " + opId);
                     multiCastDecison("abort", opId, op, key, value);
                 }
             }
@@ -200,17 +206,18 @@ public class TPCServer implements TPCNode {
 
     public void wait4Decision(int opId, String op, String key, String value){
         Timer timer = new Timer();
+        this.timers.put(opId, timer);
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
                 try{
+                    System.out.println("-> timeout waiting for op " + opId);
                     getDecision(opId, op, key, value);
                 }catch (RemoteException e){
                     e.printStackTrace();
                 }
             }
         }, 2000);
-        this.timers.put(opId, timer);
     }
 
     /*
@@ -296,14 +303,14 @@ public class TPCServer implements TPCNode {
     public void canCommit(int opId, String op, String key, String value) throws RemoteException {
         TPCNode coordnt = this.getRMIObect(this.coordinator);
 
-        System.out.println("got canComit from coordinator.");
+        System.out.println("\n\n- got canComit from coordinator.");
         String toWrite;
         if(this.canOp(key)){
             toWrite = opId + " Vote_Commit " + op + " " + key + " " + value + "\n";
             this.writeLog(toWrite);
 
-            if(op.contentEquals("put")) this.dbOp.put(key, value);
-            else if(op.contentEquals("del")) this.dbOp.del(key);
+            if(op.contentEquals("put")) this.dbOp.put(opId, key, value);
+            else if(op.contentEquals("del")) this.dbOp.del(opId, key);
             else {
                 System.out.println("DB opeartion error in canCommit: unknown op " + op);
             }
@@ -320,6 +327,7 @@ public class TPCServer implements TPCNode {
     }
 
     public void multiCastDecison(String decision, int opId, String op, String key, String value){
+
         if(decision.contentEquals("commit")){
             try{
                 this.doCommit(opId, op, key, value);
@@ -342,7 +350,6 @@ public class TPCServer implements TPCNode {
             }
         }
 
-        this.delOp(key);
     }
 
     // write log, and del thek ey in the onGoingOp map
@@ -350,7 +357,11 @@ public class TPCServer implements TPCNode {
     public void doCommit(int opId, String op, String key, String value) throws RemoteException {
         try {
             this.timers.get(opId).cancel();
-        }catch (NullPointerException e){ }
+            this.timers.remove(opId);
+            System.out.println("-> timer " + opId +" canceled");
+        }catch (NullPointerException e){
+            System.out.println("-> Error cancle timer");
+        }
         String toWrite = opId + " Global_Commit " + op + " " + key + " " +value + "\n";
         this.writeLog(toWrite);
         this.delOp(key);
@@ -370,20 +381,33 @@ public class TPCServer implements TPCNode {
     public void doAbort(int opId, String op, String key, String value) throws RemoteException {
         try {
             this.timers.get(opId).cancel();
-        }catch (NullPointerException e){ }
+            this.timers.remove(opId);
+            System.out.println("-> timer " + opId +" canceled");
+        }catch (NullPointerException e){
+            System.out.println("-> Error cancle timer");
+        }
 
         // roll back according log file
         String log = this.getRecordFromLog(-1, key);
+        System.out.println("\n- aborting " + opId);
         if(log == null){
-            this.dbOp.del(key);
+            if(!op.contentEquals("del"))
+                this.dbOp.del(opId,key);
         }else {
             String[] record = log.split(" ");
             String lastOp = record[2];
             String lastValue = record[4];
             if(lastOp.contentEquals("del")){
-                this.dbOp.del(key);
+                System.out.println("-> should delete "+ key);
+                if(op.contentEquals("del")){
+                    System.out.println("-> no action needed");
+                }else {
+                    System.out.println("-> rolling back to: " + record[0] + " del " + key);
+                    this.dbOp.del(opId,key);
+                }
             }else if(lastOp.contentEquals("put")){
-                this.dbOp.put(key, lastValue);
+                System.out.println("-> rolling back to: " + record[0] + " put " + lastValue);
+                this.dbOp.put(opId, key, lastValue);
             }
         }
 
@@ -410,7 +434,7 @@ public class TPCServer implements TPCNode {
         if(canCommit == 0){
             int votes = this.getVote(key);
             if(votes == this.participants.size()+1){
-                System.out.println("-> got enough vote");
+                System.out.println("-> got enough vote for "+ opId);
                 this.multiCastDecison("commit", opId, op, key, value);
             }
         }else {
@@ -418,7 +442,6 @@ public class TPCServer implements TPCNode {
         }
     }
 
-    @Override
     public String getDecision(int opId, String op, String key, String value) throws RemoteException{
         try {
             String request = Integer.toString(opId);
@@ -478,14 +501,14 @@ public class TPCServer implements TPCNode {
      */
     public void doWrite(String op, String key, String value){
 
-        System.out.println("- Request: " + op + " " + key + " " + value);
+        System.out.println("\n\n- Request: " + op + " " + key + " " + value);
         if(this.canOp(key)){
             int opId = this.getOpId();
             String toWrite = opId + " START_2PC  " + op + " "+ key + " " + value +"\n";
             this.writeLog(toWrite);
 
-            if(op.contentEquals("put")) this.dbOp.put(key, value);
-            else if(op.contentEquals("del")) this.dbOp.del(key);
+            if(op.contentEquals("put")) this.dbOp.put(opId,key, value);
+            else if(op.contentEquals("del")) this.dbOp.del(opId, key);
             else {
                 System.out.println("DB opeartion error in canCommit: unknown op " + op);
             }
@@ -510,7 +533,7 @@ public class TPCServer implements TPCNode {
 
     @Override
     public String doGet(String key) throws RemoteException{
-        System.out.println("- Request: get " + key);
+        System.out.println("\n\n- Request: get " + key);
         return this.dbOp.get(key);
     }
 
@@ -528,7 +551,7 @@ public class TPCServer implements TPCNode {
 
     @Override
     public String get(String key) throws RemoteException {
-        System.out.println("- Request: get " + key);
+        System.out.println("\n\n- Request: get " + key);
         String ret = null;
         if(this.participants.size() != 0){
             String dup = this.participants.get(this.nextOpId.get() % this.participants.size());
@@ -553,6 +576,7 @@ public class TPCServer implements TPCNode {
         }
         return ret.toString();
     }
+
 
     @Override
     public String doGetAll() throws RemoteException{

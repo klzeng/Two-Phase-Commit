@@ -19,12 +19,12 @@ public class DatabaseOp {
             con.commit();
         }catch (Exception e){
             System.out.println("Error connecting to database.");
-            e.printStackTrace();
+//            e.printStackTrace();
             System.exit(0);
         }
     }
 
-    public int put(String key, String value){
+    public int put(int opId, String key, String value){
         try{
             Statement  stmt = this.con.createStatement();
             String exist = this.get(key);
@@ -37,16 +37,16 @@ public class DatabaseOp {
             stmt.executeUpdate(sql);
             stmt.close();
             con.commit();
-            System.out.println("DB OPRATION: put " + key + " " + value +" successfully!" );
+            System.out.println("-> DB OPRATION "+ opId + ": put " + key + " " + value +" successfully!" );
             return 0;
         }catch (Exception e) {
             System.out.println("Error inserting \"" + key + "\",\"" + value);
-            e.printStackTrace();
+//            e.printStackTrace();
             return 1;
         }
     }
 
-    public int del(String key){
+    public int del(int opId, String key){
         try {
             Statement stmt = this.con.createStatement();
             String exist = this.get(key);
@@ -57,11 +57,11 @@ public class DatabaseOp {
                 stmt.close();
                 this.con.commit();
             }
-            System.out.println("DB OPRATION: del " + key +" successfully!" );
+            System.out.println("-> DB OPRATION "+ opId + ": del " + key +" successfully!" );
             return 0;
         }catch (Exception e){
             System.out.println("Error deleting " + key);
-            e.printStackTrace();
+//            e.printStackTrace();
             return 1;
         }
     }
@@ -77,7 +77,7 @@ public class DatabaseOp {
             stmt.close();
         }catch (Exception e){
             System.out.println("Error getting " + key);
-            e.printStackTrace();
+//            e.printStackTrace();
         }
 
         return ret;
@@ -97,7 +97,8 @@ public class DatabaseOp {
             rs.close();
             stmt.close();
         }catch (SQLException e){
-            e.printStackTrace();
+            System.out.println("Error selecting all.");
+//            e.printStackTrace();
         }
         ret.append("--------------\n");
         return ret.toString();

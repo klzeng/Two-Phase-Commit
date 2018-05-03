@@ -13,13 +13,8 @@ public class Test {
     }
 
     public void testInput(){
-        Scanner scan = new Scanner(System.in);
-        String s = scan.nextLine();
-        String[] ss =s.split(" ");
-        System.out.println(ss.length);
-        for(int i=0; i<ss.length; i++){
-            System.out.println(i + ": " + ss[i]);
-        }
+        String s = " ";
+
     }
 
     public static void main(String[] args){
