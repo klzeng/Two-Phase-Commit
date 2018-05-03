@@ -8,10 +8,8 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -52,6 +50,8 @@ public class TPCServer implements TPCNode {
                     DatagramPacket packet = new DatagramPacket(buf, buf.length);
                     socket.receive(packet);
 
+                    System.out.println();
+
                     String response = null;
                     // set response
                     InetAddress address = packet.getAddress();
@@ -59,7 +59,7 @@ public class TPCServer implements TPCNode {
                     int requestedOpId = Integer.parseInt(new String(packet.getData(),0, packet.getLength()));
 
                     String record = getRecordFromLog(requestedOpId, null);
-                    if(record == null)  response= "";
+                    if(record == null)  response= " ";
                     else if( record.split(" ")[1].contentEquals("Global_Abort")) response = "Global_Abort";
                     else if(record.split(" ")[1].contentEquals("Global_Commit")) response = "Global_Commit";
 
@@ -424,24 +424,27 @@ public class TPCServer implements TPCNode {
             String request = Integer.toString(opId);
             DatagramSocket socket = new DatagramSocket();
             DatagramPacket packet;
+
+            //  coordinator
+            try{
+                System.out.println("- Sending getDecision request to coordinator");
+                InetAddress address = InetAddress.getByName(this.coordinator.split(":")[0]);
+                packet = new DatagramPacket(request.getBytes(), request.length(), address, TPCServer.decisionPort);
+                socket.send(packet);
+            }catch (UnknownHostException e){
+                e.printStackTrace();
+            }
+
             // all the participants
             for(String each : this.participants){
                 try{
+                    System.out.println("- Sending getDecision request to " + each);
                     InetAddress address = InetAddress.getByName(each.split(":")[0]);
                     packet = new DatagramPacket(request.getBytes(), request.length(), address, TPCServer.decisionPort);
                     socket.send(packet);
                 }catch (UnknownHostException e){
                     e.printStackTrace();
                 }
-            }
-
-            //  coordinator
-            try{
-                InetAddress address = InetAddress.getByName(this.coordinator.split(":")[0]);
-                packet = new DatagramPacket(request.getBytes(), request.length(), address, TPCServer.decisionPort);
-                socket.send(packet);
-            }catch (UnknownHostException e){
-                e.printStackTrace();
             }
 
             byte[] buf = new byte[256];
@@ -480,6 +483,12 @@ public class TPCServer implements TPCNode {
             int opId = this.getOpId();
             String toWrite = opId + " START_2PC  " + op + " "+ key + " " + value +"\n";
             this.writeLog(toWrite);
+
+            if(op.contentEquals("put")) this.dbOp.put(key, value);
+            else if(op.contentEquals("del")) this.dbOp.del(key);
+            else {
+                System.out.println("DB opeartion error in canCommit: unknown op " + op);
+            }
 
             // multicast canCommit to all participants
             for(String each : this.participants){
@@ -531,6 +540,23 @@ public class TPCServer implements TPCNode {
         }
 
         return ret;
+    }
+
+    @Override
+    public String getAll() throws RemoteException{
+        StringBuilder ret = new StringBuilder();
+        ret.append("\n\n\nTimestamp " + System.currentTimeMillis() +"\n");
+        ret.append(this.dbOp.selectAll());
+        for(String each: this.participants){
+            TPCNode server = this.getRMIObect(each);
+            ret.append("\n"+server.doGetAll());
+        }
+        return ret.toString();
+    }
+
+    @Override
+    public String doGetAll() throws RemoteException{
+        return this.dbOp.selectAll();
     }
 
     /*

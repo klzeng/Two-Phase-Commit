@@ -45,5 +45,8 @@ public interface TPCNode extends Remote {
 
     public void doWrite(String op, String key, String value) throws RemoteException;
 
+    public String getAll() throws RemoteException;
+
+    public String doGetAll() throws RemoteException;
 }
 

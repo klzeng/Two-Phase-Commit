@@ -83,19 +83,24 @@ public class DatabaseOp {
         return ret;
     }
 
-    public void selectAll(){
+    public String selectAll(){
+        StringBuilder ret = new StringBuilder();
+        ret.append("--------------\n");
+        ret.append(this.dbName + "\n");
         try{
             Statement stmt = this.con.createStatement();
             String sql = "select * from keyValue;";
             ResultSet rs = stmt.executeQuery(sql);
             while (rs.next()){
-                System.out.println(rs.getString("keyString") + " : " + rs.getString("valueString"));
+                ret.append("- "+rs.getString("keyString") + " : " + rs.getString("valueString")+ "\n");
             }
             rs.close();
             stmt.close();
         }catch (SQLException e){
             e.printStackTrace();
         }
+        ret.append("--------------\n");
+        return ret.toString();
     }
 
     public void closeConnection(){

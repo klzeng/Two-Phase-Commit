@@ -1,3 +1,7 @@
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.InetAddress;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -6,9 +10,11 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 public class Client {
-    static String instruction = "- Commands you could issue:\n-> put key value\n-> del key\n-> get key";
+
 
     public static void main(String[] args){
+        String instruction = "- Commands you could issue:\n-> put key value\n-> del key\n-> get key";
+
         if(args.length != 2){
             System.out.println("Usage: java -Djava.sevurity.policy=client.policy Client hostName hostPort");
             System.exit(0);
@@ -19,9 +25,11 @@ public class Client {
             TPCNode server = (TPCNode) registry.lookup("2PCServer");
             Scanner scan = new Scanner(System.in);
             System.out.println("----------\nClient started!");
-            System.out.println(Client.instruction);
+            System.out.println(instruction);
+            String s;
             while (true){
-                String[] input = scan.nextLine().split(" ");
+                s = scan.nextLine();
+                String[] input = s.split(" ");
                 String cmd = input[0];
                 String value = null;
                 if(cmd.contentEquals("put")){
@@ -46,7 +54,19 @@ public class Client {
                     }catch (Exception e){
                         e.printStackTrace();
                     }
-                } else System.out.println(Client.instruction);
+                }else if(cmd.contentEquals("exit"))System.exit(0);
+                else if(cmd.contentEquals("getAll")){
+                    try {
+                        String ret = server.getAll();
+                        BufferedWriter bw = new BufferedWriter(new FileWriter(InetAddress.getLocalHost().getHostName() +"_dbSnapshot.txt",true));
+                        bw.write(ret);
+                        bw.close();
+                    }catch (IOException e){
+                        e.printStackTrace();
+                    }
+
+                }
+                else System.out.println(instruction);
             }
         }catch (RemoteException| NotBoundException e){
             e.printStackTrace();

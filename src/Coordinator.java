@@ -1,10 +1,4 @@
-import java.io.File;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.Scanner;
 
 public class Coordinator extends TPCServer{
@@ -21,7 +15,6 @@ public class Coordinator extends TPCServer{
             if(each.length() != 0){
                 this.participants.add(each);
             }
-
         }
 
         // handshaking with the participants, sending them all the participants info
@@ -64,6 +57,5 @@ public class Coordinator extends TPCServer{
             System.out.println("Argument must be an integer.");
             System.exit(0);
         }
-
     }
 }
