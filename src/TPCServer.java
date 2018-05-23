@@ -210,12 +210,9 @@ public class TPCServer implements TPCNode {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                try{
-                    System.out.println("-> timeout waiting for op " + opId);
-                    getDecision(opId, op, key, value);
-                }catch (RemoteException e){
-                    e.printStackTrace();
-                }
+                System.out.println("-> timeout waiting for op " + opId);
+                getDecision(opId, op, key, value);
+
             }
         }, 2000);
     }
@@ -378,7 +375,7 @@ public class TPCServer implements TPCNode {
      * - del the key in onGoingOp map
      */
     @Override
-    public void doAbort(int opId, String op, String key, String value) throws RemoteException {
+    public void doAbort(int opId, String op, String key, String value) {
         try {
             this.timers.get(opId).cancel();
             this.timers.remove(opId);
@@ -423,7 +420,7 @@ public class TPCServer implements TPCNode {
      * -
      */
     @Override
-    public String haveCommitted(int id,  String op, String key, String value, String participant) throws RemoteException {
+    public String haveCommitted(int id,  String op, String key, String value, String participant) {
         return null;
     }
 
@@ -442,7 +439,7 @@ public class TPCServer implements TPCNode {
         }
     }
 
-    public String getDecision(int opId, String op, String key, String value) throws RemoteException{
+    public String getDecision(int opId, String op, String key, String value) {
         try {
             String request = Integer.toString(opId);
             DatagramSocket socket = new DatagramSocket();
@@ -532,19 +529,19 @@ public class TPCServer implements TPCNode {
     }
 
     @Override
-    public String doGet(String key) throws RemoteException{
+    public String doGet(String key) {
         System.out.println("\n\n- Request: get " + key);
         return this.dbOp.get(key);
     }
 
     @Override
-    public int put(String key, String value) throws RemoteException {
+    public int put(String key, String value) {
         this.doWrite("put", key, value);
         return 0;
     }
 
     @Override
-    public int del(String key) throws RemoteException {
+    public int del(String key) {
         this.doWrite("del", key, null);
         return 0;
     }
@@ -579,7 +576,7 @@ public class TPCServer implements TPCNode {
 
 
     @Override
-    public String doGetAll() throws RemoteException{
+    public String doGetAll() {
         return this.dbOp.selectAll();
     }
 

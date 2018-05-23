@@ -9,22 +9,22 @@ public interface TPCNode extends Remote {
 
            // participants to coordinator
 
-    public void handShaking(String hosts) throws RemoteException;
+    void handShaking(String hosts) throws RemoteException;
 
-    public void canCommit(int id, String op, String key, String value) throws RemoteException; //canCommit: 0 - yes, 1 - no
+    void canCommit(int id, String op, String key, String value) throws RemoteException; //canCommit: 0 - yes, 1 - no
 
-    public void doCommit(int id,String op, String key, String value) throws RemoteException;
+    void doCommit(int id, String op, String key, String value) throws RemoteException;
 
-    public void doAbort(int id, String op, String key, String value) throws RemoteException;
+    void doAbort(int id, String op, String key, String value) throws RemoteException;
 
-    public String doGet(String key) throws RemoteException;
+    String doGet(String key) throws RemoteException;
 
 
            // coordinator to participants
 
-    public void vote(int id, String op, String key, String value, int canCommit) throws RemoteException;
+    void vote(int id, String op, String key, String value, int canCommit) throws RemoteException;
 
-    public String haveCommitted(int id,  String op, String key, String value, String participant) throws RemoteException;
+    String haveCommitted(int id, String op, String key, String value, String participant) throws RemoteException;
 
     // to each other
 //    public String getDecision(int id, String op, String key, String value) throws RemoteException;
@@ -34,14 +34,14 @@ public interface TPCNode extends Remote {
      * key/value store to clients(exposed from coordinator)
      */
 
-    public int put(String key, String value) throws RemoteException;
+    int put(String key, String value) throws RemoteException;
 
-    public int del(String key) throws RemoteException;
+    int del(String key) throws RemoteException;
 
-    public String get(String key) throws RemoteException;
+    String get(String key) throws RemoteException;
 
-    public String getAll() throws RemoteException;
+    String getAll() throws RemoteException;
 
-    public String doGetAll() throws RemoteException;
+    String doGetAll() throws RemoteException;
 }
 

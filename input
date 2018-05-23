@@ -1,0 +1,22 @@
+sleep
+put key1 value1
+put key2 value2
+put key3 value3
+put key4 value4
+put key6 value6
+put key2 value100
+get key1
+get key2
+del key1
+sleep
+get key3
+put key4 value4
+put key4 value5
+put key4 value6
+put key3 value3
+get key1
+get key3
+del key2
+get key2
+getAll
+exit
