@@ -1,3 +1,0 @@
-grant codeBase "file:/Users/soukonling/Documents/Mason/CS-675/twoPhaseCommit/src/" {
-    permission java.security.AllPermission;
-};
