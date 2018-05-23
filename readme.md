@@ -39,7 +39,7 @@ For Two-Phase Commit protocol, see  [wikipedia](https://en.wikipedia.org/wiki/Tw
 -	*Coordinator* is a subclass of TPCServer. 
 
 # Test
-Two-Phase Commit works among a cluster a datastore, with one of them as master, so you should test it on a cluster. 
+Two-Phase Commit works among a cluster of datastores, with one of them as master, so you should test it on a cluster. 
 - kill any process occupying port 1100 and 1200
 - issue ./coordinaotr.sh on one node
 - issue ./participant.sh on other nodes you want replicas to run
