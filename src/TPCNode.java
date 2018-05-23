@@ -7,7 +7,7 @@ public interface TPCNode extends Remote {
      * 2PC protocols
      */
 
-           // participants to coordinator
+    // participants to coordinator
 
     void handShaking(String hosts) throws RemoteException;
 
@@ -20,14 +20,11 @@ public interface TPCNode extends Remote {
     String doGet(String key) throws RemoteException;
 
 
-           // coordinator to participants
+    // coordinator to participants
 
     void vote(int id, String op, String key, String value, int canCommit) throws RemoteException;
 
     String haveCommitted(int id, String op, String key, String value, String participant) throws RemoteException;
-
-    // to each other
-//    public String getDecision(int id, String op, String key, String value) throws RemoteException;
 
 
     /*
@@ -40,6 +37,7 @@ public interface TPCNode extends Remote {
 
     String get(String key) throws RemoteException;
 
+    // following two for testing only
     String getAll() throws RemoteException;
 
     String doGetAll() throws RemoteException;
